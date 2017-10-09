@@ -30,10 +30,9 @@ public class UsbHelper {
     private PendingIntent mPermissionIntent;
     private UsbManager mUsbManager;
     private UsbPermision permisionInterFace;
-    ICReaderApi api;
 
     interface UsbPermision {
-        void onSucess(UsbDevice device, UsbManager mUsbManager);
+        void onSucess(String id);
 
         void onErro();
     }
@@ -50,10 +49,10 @@ public class UsbHelper {
     }
 
     //是否连接了
-    public boolean isUsbDetach(Context context) {
+    public boolean startRead(Context context) {
         boolean isDetach = false;
-        mUsbManager = (UsbManager) context.getSystemService(context.USB_SERVICE);
-        HashMap<String, UsbDevice> deviceHashMap = mUsbManager.getDeviceList();
+
+        HashMap<String, UsbDevice> deviceHashMap = getManager(context).getDeviceList();
         Iterator<UsbDevice> iterator = deviceHashMap.values().iterator();
         while (iterator.hasNext()) {
             UsbDevice device = iterator.next();
@@ -68,14 +67,14 @@ public class UsbHelper {
 
     //是否有权限
     private void hasPermisimion(Context context, UsbDevice device) {
-        if (mUsbManager.hasPermission(device)) {
-            permisionInterFace.onSucess(device, mUsbManager);
-            api = new ICReaderApi(device, mUsbManager);
+        if (getManager(context).hasPermission(device)) {
+            ICReaderApi api = new ICReaderApi(device, getManager(context));
+            readCard(api);
         } else {
             mPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_DEVICE_PERMISSION), 0);
             IntentFilter permissionFilter = new IntentFilter(ACTION_DEVICE_PERMISSION);
             context.registerReceiver(mUsbReceiver, permissionFilter);
-            mUsbManager.requestPermission(device, mPermissionIntent);
+            getManager(context).requestPermission(device, mPermissionIntent);
 
         }
     }
@@ -88,8 +87,8 @@ public class UsbHelper {
                     UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         if (device != null) {
-                            permisionInterFace.onSucess(device, mUsbManager);
-                            api = new ICReaderApi(device, mUsbManager);
+                            ICReaderApi api = new ICReaderApi(device, getManager(context));
+                            readCard(api);
                         }
                     } else {
                         permisionInterFace.onErro();
@@ -100,42 +99,18 @@ public class UsbHelper {
     };
 
 
-    public void HasUsb(final Context context) {
-        Observable.interval(1000, TimeUnit.MICROSECONDS, Schedulers.io())
-                .flatMap(new Function<Long, ObservableSource<UsbDevice>>() {
-                    @Override
-                    public ObservableSource<UsbDevice> apply(Long aLong) throws Exception {
-                        ObservableSource obs = new Observable() {
-                            @Override
-                            protected void subscribeActual(Observer observer) {
-                                getManager(context);
-                                UsbDevice device = null;
-                                HashMap<String, UsbDevice> deviceHashMap = mUsbManager.getDeviceList();
-                                Iterator<UsbDevice> iterator = deviceHashMap.values().iterator();
-                                while (iterator.hasNext()) {
-                                    device = iterator.next();
-                                    if (device.getProductId() == 53 && device.getVendorId() == 65535) {
-                                        observer.onNext(device);
-                                    }
-
-                                }
-                            }
-                        };
-
-                        return obs;
-
-                    }
-                });
-
+    private void readCard( ICReaderApi api){
+        if (api!=null){
+            permisionInterFace.onSucess(readCardId(api));
+        }
     }
-
 
     public void onDestroy(Context context) {
 
     }
 
-    private void readCardId() {
-        String text = new String();
+    private String readCardId( ICReaderApi api) {
+        String text ="";
         byte mode = 0x52;
 
         byte halt = (byte) 0;
@@ -149,9 +124,13 @@ public class UsbHelper {
             else
                 text += ("More than one card......\n");
             text = showData(text, value, "The card number:\n", 0, 4);
-            Bee(10, 1);
-        } else
+            Bee(api,10, 1);
+            return text;
+        } else{
             text = showStatue(text, snr[0]);
+            return text;
+        }
+
     }
 
     private String showStatue(String text, int Code) {
@@ -254,7 +233,7 @@ public class UsbHelper {
         return text;
     }
 
-    private void Bee(int freqInt, int durationInt) {
+    private void Bee( ICReaderApi api,int freqInt, int durationInt) {
         String text = new String();
         byte freq = (byte) freqInt;
         byte duration = (byte) durationInt;

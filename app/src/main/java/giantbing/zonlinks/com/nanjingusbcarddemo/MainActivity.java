@@ -20,24 +20,20 @@ import java.util.Iterator;
 import giantbing.zonlinks.com.nanjingusbcarddemo.usbrfidreader.ICReaderApi;
 
 public class MainActivity extends AppCompatActivity {
-    public static final String ACTION_DEVICE_PERMISSION = "com.giantbing.USB_PERMISSION";
-
     Button readBtn;
     TextView idText;
-    PendingIntent mPermissionIntent;
-    UsbManager mUsbManager;
-
+    UsbHelper usbHelper;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         readBtn = (Button) findViewById(R.id.readBtn);
         idText = (TextView) findViewById(R.id.CardId);
-
+        initDevice();
         readBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                initDevice();
+                usbHelper.startRead(MainActivity.this);
             }
         });
     }
@@ -48,10 +44,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initDevice()  {
-        UsbHelper usbHelper = new UsbHelper(new UsbHelper.UsbPermision() {
+        usbHelper = new UsbHelper(new UsbHelper.UsbPermision() {
+
+
             @Override
-            public void onSucess(UsbDevice device, UsbManager mUsbManager) {
-                //api = new ICReaderApi(device,mUsbManager);
+            public void onSucess(String id) {
+                idText.append(id);
             }
 
             @Override
@@ -59,9 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        if (usbHelper.isUsbDetach(this)){
-            //readCardId();
-        }
+
     }
 
 

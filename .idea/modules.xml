@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/NanjingUsbCardDemo.iml" filepath="$PROJECT_DIR$/NanjingUsbCardDemo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/UsbCardDemo.iml" filepath="$PROJECT_DIR$/UsbCardDemo.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
