@@ -1,4 +1,4 @@
-package giantbing.zonlinks.com.nanjingusbcarddemo.usbrfidreader;
+package giantbing.zonlinks.com.usbcardreaderlibrary.usbrfidreader;
 
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;

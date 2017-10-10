@@ -1,4 +1,4 @@
-package giantbing.zonlinks.com.nanjingusbcarddemo.usbrfidreader;
+package giantbing.zonlinks.com.usbcardreaderlibrary.usbrfidreader;
 
 public class Define {
 	static byte STX = (byte) 0xAA;

@@ -1,4 +1,4 @@
-package giantbing.zonlinks.com.nanjingusbcarddemo;
+package giantbing.zonlinks.com.usbcardreaderlibrary.usbrfidreader;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -7,16 +7,17 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
-import android.util.Log;
+import android.text.TextUtils;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import giantbing.zonlinks.com.nanjingusbcarddemo.usbrfidreader.ICReaderApi;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -30,8 +31,9 @@ public class UsbHelper {
     private PendingIntent mPermissionIntent;
     private UsbManager mUsbManager;
     private UsbPermision permisionInterFace;
+    private Disposable disPosable;
 
-    interface UsbPermision {
+    public interface UsbPermision {
         void onSucess(String id);
 
         void onErro();
@@ -99,37 +101,61 @@ public class UsbHelper {
     };
 
 
-    private void readCard( ICReaderApi api){
-        if (api!=null){
-            permisionInterFace.onSucess(readCardId(api));
+    private void readCard(final ICReaderApi api) {
+        if (api != null) {
+            disPosable = Observable.interval(200, TimeUnit.MICROSECONDS)
+                    .map(new Function<Long, String>() {
+
+                        @Override
+                        public String apply(Long aLong) throws Exception {
+                            return readCardId(api);
+                        }
+                    })
+                    .subscribeOn(Schedulers.io())
+                    .distinctUntilChanged()
+                    .doOnNext(new Consumer<String>() {
+                        @Override
+                        public void accept(String s) throws Exception {
+                            if (!TextUtils.isEmpty(s))
+                                Bee(api, 10, 1);
+                        }
+                    })
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Consumer<String>() {
+                        @Override
+                        public void accept(String s) throws Exception {
+
+                            permisionInterFace.onSucess(s);
+
+                        }
+                    });
+
+
         }
     }
 
-    public void onDestroy(Context context) {
-
+    public void stopRead() {
+        if (!disPosable.isDisposed())
+            disPosable.dispose();
     }
 
-    private String readCardId( ICReaderApi api) {
-        String text ="";
+    public void onDestroy() {
+        if (!disPosable.isDisposed())
+            disPosable.dispose();
+    }
+
+    private String readCardId(ICReaderApi api) {
+        String text = "";
         byte mode = 0x52;
 
         byte halt = (byte) 0;
         byte[] snr = new byte[1];
         byte[] value = new byte[5]; // card number
         int result = api.GET_SNR(mode, halt, snr, value);
-        text = showStatue(text, result);
         if (result == 0) {
-            if (snr[0] == 0x00)
-                text += ("Only one card.....\n");
-            else
-                text += ("More than one card......\n");
-            text = showData(text, value, "The card number:\n", 0, 4);
-            Bee(api,10, 1);
-            return text;
-        } else{
-            text = showStatue(text, snr[0]);
-            return text;
+            text = showData(value, 0, 4);
         }
+        return HexToInt(text);
 
     }
 
@@ -223,21 +249,27 @@ public class UsbHelper {
         return text;
     }
 
-    private String showData(String text, byte[] data, String str, int pos,
-                            int len) {
+    private String showData(byte[] data, int pos, int len) {
+
         String dStr = "";
         for (int i = 0; i < len; i++) {
-            dStr += String.format("%02x ", data[i + pos]);
+            dStr += String.format("%02x", data[i + pos]);
         }
-        text += (str + dStr.toUpperCase() + '\n');
-        return text;
+        return dStr.toUpperCase();
     }
 
-    private void Bee( ICReaderApi api,int freqInt, int durationInt) {
-        String text = new String();
+    public void Bee(ICReaderApi api, int freqInt, int durationInt) {
         byte freq = (byte) freqInt;
         byte duration = (byte) durationInt;
         byte[] buffer = new byte[1];
         int result = api.API_ControlBuzzer(freq, duration, buffer);
+    }
+
+    private String HexToInt(String inHex) {//Hex字符串转int
+        if (!TextUtils.isEmpty(inHex)) {
+            String re = "" + Long.valueOf(inHex.trim(), 16);
+            return re;
+
+        } else return "";
     }
 }
