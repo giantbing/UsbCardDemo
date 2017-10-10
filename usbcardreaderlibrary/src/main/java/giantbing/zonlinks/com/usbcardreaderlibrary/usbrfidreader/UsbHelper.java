@@ -133,14 +133,24 @@ public class UsbHelper {
 
         }
     }
-
+    public void onResume(Context context) {
+        IntentFilter usbFilter = new IntentFilter();
+        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        context.registerReceiver(mUsbReceiver, usbFilter);
+    }
     public void stopRead() {
         if (!disPosable.isDisposed())
             disPosable.dispose();
     }
+    public void onPause(Context context){
 
-    public void onDestroy() {
-        if (!disPosable.isDisposed())
+        if (disPosable!=null&&!disPosable.isDisposed())
+            disPosable.dispose();
+    }
+    public void onDestroy(Context context) {
+        context.unregisterReceiver(mUsbReceiver);
+        if (disPosable!=null&&!disPosable.isDisposed())
             disPosable.dispose();
     }
 
@@ -272,4 +282,16 @@ public class UsbHelper {
 
         } else return "";
     }
+
+    private final BroadcastReceiver mUsbTouchReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+
+            if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
+                startRead(context);
+            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                onDestroy(context);
+            }
+        }
+    };
 }

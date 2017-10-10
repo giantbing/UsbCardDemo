@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        usbHelper.onDestroy();
+        usbHelper.onDestroy(MainActivity.this);
     }
 
     private void initUsbDevice()  {
