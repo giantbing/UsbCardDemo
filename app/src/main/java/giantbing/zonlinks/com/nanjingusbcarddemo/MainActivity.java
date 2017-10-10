@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         readBtn = (Button) findViewById(R.id.readBtn);
         idText = (TextView) findViewById(R.id.CardId);
-        initDevice();
+        initUsbDevice();
         usbHelper.startRead(MainActivity.this);
         readBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -31,9 +31,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        usbHelper.onDestroy();
     }
 
-    private void initDevice()  {
+    private void initUsbDevice()  {
         usbHelper = new UsbHelper(new UsbHelper.UsbPermision() {
 
 
